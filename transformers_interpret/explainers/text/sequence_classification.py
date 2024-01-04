@@ -326,6 +326,20 @@ class SequenceClassificationExplainer(BaseExplainer):
 
 
 class PairwiseSequenceClassificationExplainer(SequenceClassificationExplainer):
+    
+    @property
+    def predicted_class_index(self) -> int:
+        "Returns predicted class index (int) for model with last calculated `input_ids`, `token_type_ids`, `position_ids`, `attention_mask`"
+        if len(self.input_ids) > 0:
+            # we call this before _forward() so it has to be calculated twice
+            preds = preds = self._get_preds(self.input_ids, self.token_type_ids, self.position_ids, self.attention_mask).logits
+            self.pred_class = torch.argmax(torch.softmax(preds, dim=0)[0])
+            return torch.argmax(torch.softmax(preds, dim=1)[0]).cpu().detach().numpy()
+
+        else:
+            raise InputIdsNotCalculatedError("input_ids have not been created yet.`")
+
+
     def _make_input_reference_pair(
         self, text1: Union[List, str], text2: Union[List, str]
     ) -> Tuple[torch.Tensor, torch.Tensor, int]:
